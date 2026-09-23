@@ -19,7 +19,7 @@ SCRIPT / VIDEO_URL / CAPTION / STATUS
 ```
 [Upload Video to BLOTATO] → [Tiktok][Youtube][Instagram][Facebook][Linkedin][Twitter(X)][Threads][Bluesky][Pinterest]
 ```
-- **形态特征**：1 个上传节点 + 9 个平台节点直连扇出，全是 **社区节点（@blotato/n8n-nodes-blotato）**——**本机没装的话导入即缺节点**（B 阶段处置 = mock 节点原名占位；教学处置 = 本厂抖音/B站浏览器发布通道替代）。
+- **形态特征**：1 个上传节点 + 9 个平台节点直连扇出，全是 **社区节点（@blotato/n8n-nodes-blotato）**——**本机没装的话导入即缺节点**（B 阶段处置 = mock 节点原名占位；教学处置 = 出海发布线 **TikTok（Creator Fund）+ YouTube** 双平台（老板 2026-09-24 拍板，生产通道待建））。
 - **付费性**：Blotato 订阅制；它的价值是"一个 API 管 9 平台"，值不值看你的发布频率。
 - **Bluesky/Threads/Pinterest** 的名字值得记住——多数分发工具不覆盖这三个。
 
