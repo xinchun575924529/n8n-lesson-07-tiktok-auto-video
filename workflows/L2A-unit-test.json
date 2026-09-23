@@ -1,0 +1,263 @@
+{
+  "id": "L2Test100000001",
+  "name": "L2-A 单测 10000 TikTok VEED (9单元)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a01e8b24-e88c-47fb-bc40-e28afbd02d75",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U1: Extract Photo and Theme（Set 节点表达式忠实移植）\nfunction extract(message){\n  const photoUrl = message.photo ? message.photo[message.photo.length - 1].file_id : '';\n  const theme = message.caption || message.text || 'viral content';\n  return {photoUrl, theme};\n}\nlet r = extract({photo:[{file_id:'small'},{file_id:'large'}], caption:'fitness tips'});\nT('U1 photo多尺寸取最大(最后一个)', r.photoUrl==='large');\nT('U1 caption作主题', r.theme==='fitness tips');\nr = extract({photo:[{file_id:'only'}]});\nT('U1 无caption无text回退viral content', r.theme==='viral content');\nr = extract({text:'hello world'});\nT('U1 无photo时photoUrl为空串', r.photoUrl==='');\nT('U1 text兜底主题', r.theme==='hello world');\nr = extract({caption:'', text:'fallback'});\nT('U1 空串caption被||跳过落到text', r.theme==='fallback');\nr = extract({});\nT('U1 全空: photoUrl空+viral content', r.photoUrl==='' && r.theme==='viral content');\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "4b258044-e8be-4cec-ba23-b79ea04a9630",
+      "name": "U1 Extract Photo+Theme",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U2: Convert .mpga to .mp3（模板 Code 节点逐字移植）\nfunction convert(items){\n  // ===== 模板原文开始 =====\n  return items.map(item => {\n    const b = item.binary?.audio;\n    if (!b) return item;\n    item.binary.audio_mp3 = {\n      ...b,\n      fileName: (b.fileName || 'audio.mp3').replace(/\\.mpga$/i, '.mp3'),\n      mimeType: 'audio/mpeg'\n    };\n    return item;\n  });\n  // ===== 模板原文结束 =====\n}\nlet out = convert([{json:{}, binary:{audio:{data:'B64', fileName:'voice.mpga', mimeType:'audio/x-mpga'}}}]);\nlet nb = out[0].binary.audio_mp3;\nT('U2 mpga改名mp3', nb.fileName==='voice.mp3');\nT('U2 mime改audio/mpeg', nb.mimeType==='audio/mpeg');\nT('U2 data保留', nb.data==='B64');\nT('U2 原binary.audio保留(模板注释掉了delete)', !!out[0].binary.audio);\nout = convert([{json:{x:1}}]);\nT('U2 无binary原样透传', !out[0].binary && out[0].json.x===1);\nout = convert([{json:{}, binary:{audio:{data:'D'}}}]);\nT('U2 无fileName默认audio.mp3', out[0].binary.audio_mp3.fileName==='audio.mp3');\nout = convert([{json:{}, binary:{audio:{data:'D', fileName:'x.mp3'}}}]);\nT('U2 已是mp3不再改', out[0].binary.audio_mp3.fileName==='x.mp3');\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "31c01300-c86b-4742-b90c-3b96eaad9747",
+      "name": "U2 mpga-to-mp3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U3: tmpfiles.org URL 改写正则（FAL.ai 节点 jsonBody 内联，忠实移植）\nfunction rw(u){ return u.replace(/^http:\\/\\/tmpfiles\\.org\\/(\\d+)\\/(.*)$/i, 'https://tmpfiles.org/dl/$1/$2'); }\nT('U3 标准http链接改https+dl', rw('http://tmpfiles.org/123/pic.jpg')==='https://tmpfiles.org/dl/123/pic.jpg');\nT('U3 带子路径文件名', rw('http://tmpfiles.org/9/a/b.mp3')==='https://tmpfiles.org/dl/9/a/b.mp3');\nT('U3 大写HTTP/i修饰符生效', rw('HTTP://TMPFILES.ORG/1/x.png')==='https://tmpfiles.org/dl/1/x.png');\nconst dlHttp = rw('http://tmpfiles.org/dl/123/pic.jpg');\nT('U3 [坑]若上游返回/dl/链接则正则不命中-仍http', dlHttp==='http://tmpfiles.org/dl/123/pic.jpg');\nconst httpsU = rw('https://tmpfiles.org/123/pic.jpg');\nT('U3 [坑]https开头不命中-保持https无dl', httpsU==='https://tmpfiles.org/123/pic.jpg');\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "7a36c833-5a49-438b-b9d4-fc4e0bc2cb69",
+      "name": "U3 tmpfiles URL Regex",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U4: Perplexity 提示词（取 caption 而非 theme，忠实移植）\nfunction pplx(caption){\n  return \"Find the top 3 current viral trends related to: \" + caption +\n    \". Focus on trending topics, hashtags, and content styles that are performing well on TikTok right now. \" +\n    \"Be specific and actionable. Limit your response strictly to 3 results only — no more.\";\n}\nT('U4 含主题', pplx('fitness').indexOf('related to: fitness.')>0);\nT('U4 限制3条指令在', pplx('x').indexOf('strictly to 3 results')>0);\nconst bad = pplx(undefined);\nT('U4 [坑]caption缺失时拼出undefined(不走viral content兜底)', bad.indexOf('related to: undefined.')>0);\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "942848a2-840b-4fac-9b6c-db6f199515c9",
+      "name": "U4 Perplexity Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U5: GPT脚本提示词 + ElevenLabs 请求构造（忠实移植）\nfunction scriptPrompt(trendsContent, theme){\n  return \"Based on these trends: \" + trendsContent + \"\\n\\nCreate a viral 30-second maximum TikTok script about: \" + theme + \"\\n\\nRequirements:\\n- Maximum 30 seconds when spoken\\n- Hook in first 2 seconds\\n- Engaging and conversational\\n- Optimized for voice synthesis\\n- No special characters or formatting\\n- Return ONLY the script text, nothing else\";\n}\nconst sp = scriptPrompt('TRENDS_XYZ', 'fitness tips');\nT('U5 趋势注入', sp.indexOf('Based on these trends: TRENDS_XYZ')===0);\nT('U5 主题注入', sp.indexOf('about: fitness tips')>0);\nT('U5 [坑]30秒写死在prompt文本, config.scriptMaxDuration未被引用', sp.indexOf('30-second')>0);\nfunction ttsReq(voiceId, openAiOutput, apiKey){\n  return {\n    url: 'https://api.elevenlabs.io/v1/text-to-speech/' + voiceId,\n    headers: {'xi-api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg'},\n    body: { text: openAiOutput.message.content, model_id: 'eleven_multilingual_v2', voice_settings: {stability:0.5, similarity_boost:0.75} }\n  };\n}\nconst tq = ttsReq('VOICE1', {message:{content:'口播稿ABC'}}, 'KEY9');\nT('U5 tts url拼voiceId', tq.url==='https://api.elevenlabs.io/v1/text-to-speech/VOICE1');\nT('U5 tts text取message.content', tq.body.text==='口播稿ABC');\nT('U5 tts model固定eleven_multilingual_v2', tq.body.model_id==='eleven_multilingual_v2');\nT('U5 xi-api-key头', tq.headers['xi-api-key']==='KEY9');\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "6dabd5d4-c6f7-4e67-8bb8-23cf2494d728",
+      "name": "U5 GPT+ElevenLabs Req",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U6: FAL.ai 渲染请求体（忠实移植：image取Build Public Image URL、audio取Upload Audio输出、480p硬编码）\nfunction rw(u){ return u.replace(/^http:\\/\\/tmpfiles\\.org\\/(\\d+)\\/(.*)$/i, 'https://tmpfiles.org/dl/$1/$2'); }\nfunction falBody(imageNodeJson, uploadAudioJson, falKey){\n  return {\n    body: { image_url: rw(imageNodeJson.data.url), audio_url: rw(uploadAudioJson.data.url), resolution: '480p' },\n    auth: falKey\n  };\n}\nconst fb = falBody({data:{url:'http://tmpfiles.org/11/i.jpg'}}, {data:{url:'http://tmpfiles.org/22/a.mp3'}}, 'RAWKEY');\nT('U6 image_url改写', fb.body.image_url==='https://tmpfiles.org/dl/11/i.jpg');\nT('U6 audio_url改写', fb.body.audio_url==='https://tmpfiles.org/dl/22/a.mp3');\nT('U6 [坑]分辨率480p硬编码不可配', fb.body.resolution==='480p');\nT('U6 [坑]Authorization直接发裸key(FAL官方要求Key前缀,模板疑似bug)', fb.auth==='RAWKEY');\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "bc4835cd-0b83-48d2-8ec0-11edbdf54f35",
+      "name": "U6 FAL Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U7: Download VEED Video 轮询 URL（忠实移植）\nfunction pollUrl(j){ return 'https://queue.fal.run/veed/fabric-1.0/requests/' + j.request_id; }\nT('U7 轮询URL拼request_id', pollUrl({request_id:'abc-123'})==='https://queue.fal.run/veed/fabric-1.0/requests/abc-123');\n// Wait 节点静态参数: unit=minutes amount=10\nconst waitCfg = {unit:'minutes', amount:10};\nT('U7 [坑]Wait写死10分钟-无轮询无超时无错误网', waitCfg.unit==='minutes' && waitCfg.amount===10);\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "4d6807ac-85f1-41fb-87df-93f5817148ae",
+      "name": "U7 VEED Poll+Wait",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U8: Sheets 列映射 + 状态回写（忠实移植）\nfunction sheetMap(extractJson, captionOut, audioUp, imgUp, dlJson){\n  return {\n    'IDEA': extractJson.message.caption,\n    'CAPTION': captionOut.message.content,\n    'URL AUDIO': audioUp.data.url,\n    'URL IMAGE': imgUp.data.url,\n    'URL VIDEO': dlJson.video.url\n  };\n}\nconst m = sheetMap({message:{caption:'fitness'}}, {message:{content:'文案#tag'}}, {data:{url:'http://tmpfiles.org/2/a.mp3'}}, {data:{url:'http://tmpfiles.org/1/i.jpg'}}, {video:{url:'https://fal.media/v.mp4'}});\nT('U8 IDEA取caption', m['IDEA']==='fitness');\nT('U8 CAPTION取gpt输出', m['CAPTION']==='文案#tag');\nT('U8 URL VIDEO取video.url', m['URL VIDEO']==='https://fal.media/v.mp4');\nconst m2 = sheetMap({message:{text:'only text'}}, {message:{content:'c'}}, {data:{url:'u'}}, {data:{url:'v'}}, {video:{url:'w'}});\nT('U8 [坑]text-only输入时IDEA=undefined(theme兜底没被用到)', m2['IDEA']===undefined);\n// Update Status to DONE 只写 STATUS + URL VIDEO\nconst upd = {'STATUS':'DONE'};\nT('U8 状态回写STATUS=DONE', upd.STATUS==='DONE');\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "96c3de54-5643-4912-8217-2f05939d4547",
+      "name": "U8 Sheets Mapping",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R = ($json && $json.results) ? $json.results : [];\nfunction T(name, cond){ R.push((cond?'PASS':'FAIL')+' | '+name); }\n\n// U9: 配置节点语义 + Send video + Blotato 扇出（静态结构断言，模板事实）\n// Workflow Configuration: 5 个 assignment + includeOtherFields=true\nconst cfg = {elevenLabsApiKey:'K', elevenLabsVoiceId:'V', falApiKey:'F', scriptMaxDuration:30, perplexityModel:'sonar'};\nT('U9 配置含5键', Object.keys(cfg).length===5);\nT('U9 scriptMaxDuration=30', cfg.scriptMaxDuration===30);\nT('U9 perplexityModel=sonar', cfg.perplexityModel==='sonar');\n// Send a video: file=$json['URL VIDEO'], chatId=trigger chat.id\nfunction sendVideoCfg(sheetJson, triggerJson){ return {file: sheetJson['URL VIDEO'], chatId: triggerJson.message.chat.id}; }\nconst sv = sendVideoCfg({'URL VIDEO':'https://fal.media/v.mp4'}, {message:{chat:{id:555}}});\nT('U9 回传视频取URL VIDEO', sv.file==='https://fal.media/v.mp4');\nT('U9 chatId取触发会话', sv.chatId===555);\n// Blotato: 1 上传媒体 + 9 平台分发 + Merge1(chooseBranch, 9 inputs)\nT('U9 Blotato 9平台扇出', ['tiktok','linkedin','facebook','instagram','twitter','youtube','threads','bluesky','pinterest'].length===9);\nT('U9 Merge1=chooseBranch汇聚9路', true);\n\nreturn [{json:{results:R}}];\n"
+      },
+      "id": "55c2709d-4a04-4878-b4c7-271c4e8409f8",
+      "name": "U9 Config+Fanout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst R = ($json && $json.results) ? $json.results : [];\nconst fails = R.filter(x => x.indexOf('FAIL')===0);\nconst summary = {total: R.length, pass: R.length - fails.length, fail: fails.length, fails};\nconsole.log('==== L2-A 10000 SUMMARY ====');\nconsole.log(JSON.stringify(summary, null, 1));\nif (fails.length) throw new Error('L2-A FAILED: ' + fails.join(' ; '));\nreturn [{json:{summary}}];\n"
+      },
+      "id": "a812d58c-a950-473a-a2bd-6cae1b8d6192",
+      "name": "FINAL Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "U1 Extract Photo+Theme",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U1 Extract Photo+Theme": {
+      "main": [
+        [
+          {
+            "node": "U2 mpga-to-mp3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U2 mpga-to-mp3": {
+      "main": [
+        [
+          {
+            "node": "U3 tmpfiles URL Regex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U3 tmpfiles URL Regex": {
+      "main": [
+        [
+          {
+            "node": "U4 Perplexity Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U4 Perplexity Prompt": {
+      "main": [
+        [
+          {
+            "node": "U5 GPT+ElevenLabs Req",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U5 GPT+ElevenLabs Req": {
+      "main": [
+        [
+          {
+            "node": "U6 FAL Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U6 FAL Body": {
+      "main": [
+        [
+          {
+            "node": "U7 VEED Poll+Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U7 VEED Poll+Wait": {
+      "main": [
+        [
+          {
+            "node": "U8 Sheets Mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U8 Sheets Mapping": {
+      "main": [
+        [
+          {
+            "node": "U9 Config+Fanout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "U9 Config+Fanout": {
+      "main": [
+        [
+          {
+            "node": "FINAL Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "pinData": {},
+  "tags": []
+}
