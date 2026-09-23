@@ -1,0 +1,304 @@
+{
+  "id": "L2Cstm10000001",
+  "name": "L2-C 免费真跑 10000",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "146f22db-e34c-438a-9026-bc049a5ef4ca",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{message:{photo:[{file_id:'local-g2a'}], caption:'fitness tips 健身新手入门', chat:{id:555}}}}];"
+      },
+      "id": "b5ca629a-4ce8-4e09-91b7-684411f4f735",
+      "name": "Mock TG Message In",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "photoUrl",
+              "type": "string",
+              "value": "={{ $json.message.photo ? $json.message.photo[$json.message.photo.length - 1].file_id : '' }}"
+            },
+            {
+              "id": "id-2",
+              "name": "theme",
+              "type": "string",
+              "value": "={{ $json.message.caption || $json.message.text || 'viral content' }}"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "id": "1e5043e2-7c03-4a47-80b7-a936420ec81c",
+      "name": "Extract Photo and Theme",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs');\nconst key=JSON.parse(fs.readFileSync('C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/deepseek-key.json','utf8')).apiKey;\nasync function ds(prompt, maxTok){\n  const resp = await this.helpers.httpRequest({method:'POST', url:'https://api.deepseek.com/chat/completions',\n    headers:{Authorization:'Bearer '+key, 'Content-Type':'application/json'},\n    body:{model:'deepseek-chat', messages:[{role:'user', content:prompt}], max_tokens:maxTok||400}, json:true});\n  return resp.choices[0].message.content;\n}\nconst theme=$('Extract Photo and Theme').first().json.theme;\nconst prompt='Find the top 3 current viral trends related to: '+theme+'. Focus on trending topics, hashtags, and content styles that are performing well on TikTok right now. Be specific and actionable. Limit your response strictly to 3 results only — no more.';\nconst trends = await ds(prompt, 400);\nreturn [{json:{theme, trends}}];"
+      },
+      "id": "04d2a959-d4a0-4135-b21c-a97f3e65929b",
+      "name": "DeepSeek Trends (替Perplexity)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs');\nconst key=JSON.parse(fs.readFileSync('C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/deepseek-key.json','utf8')).apiKey;\nasync function ds(prompt, maxTok){\n  const resp = await this.helpers.httpRequest({method:'POST', url:'https://api.deepseek.com/chat/completions',\n    headers:{Authorization:'Bearer '+key, 'Content-Type':'application/json'},\n    body:{model:'deepseek-chat', messages:[{role:'user', content:prompt}], max_tokens:maxTok||400}, json:true});\n  return resp.choices[0].message.content;\n}\nconst theme=$json.theme, trends=$json.trends;\nconst prompt='Based on these trends: '+trends+'\\n\\nCreate a viral 30-second maximum TikTok script about: '+theme+'\\n\\nRequirements:\\n- Maximum 30 seconds when spoken\\n- Hook in first 2 seconds\\n- Engaging and conversational\\n- Optimized for voice synthesis\\n- No special characters or formatting\\n- Return ONLY the script text, nothing else';\nconst script = await ds(prompt, 500);\nreturn [{json:{theme, trends, script}}];"
+      },
+      "id": "c892e2a8-c018-4e3a-84cd-56275af6354f",
+      "name": "DeepSeek Script (替GPT)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs'); const cp=require('child_process');\nconst dir='C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/10000-c-data';\nfs.mkdirSync(dir, {recursive:true});\nconst txt=$json.script.replace(/[\"“”\\r\\n]+/g,' ').trim();\nfs.writeFileSync(dir+'/script.txt', txt, 'utf8');\nconst audio=dir+'/voice.mp3';\ncp.execSync('\"'+'C:/Users/Administrator/AppData/Local/easyclaw/ai/tool_cache/resources/tools/win/python-3.11.9/Scripts/edge-tts.exe'+'\" --voice zh-CN-XiaoxiaoNeural --rate=+8% --file \"'+dir+'/script.txt\" --write-media \"'+audio+'\"');\nconst audioSize=fs.statSync(audio).size;\nreturn [{json:{...$json, audioPath:audio, audioSize}}];"
+      },
+      "id": "0e21fa78-f564-4524-86cb-4c594007d889",
+      "name": "edge-tts Voice (替ElevenLabs)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp=require('child_process');\nconst o=cp.execSync('ffprobe -v error -show_entries format=duration -of csv=p=0 \"'+$json.audioPath+'\"').toString().trim();\nreturn [{json:{...$json, audioSec:parseFloat(o)}}];"
+      },
+      "id": "eb494655-89d6-4fd4-a805-302643d6defd",
+      "name": "Probe Audio Duration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs'); const cp=require('child_process');\nconst dir='C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/10000-c-data';\nconst img='C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/lesson-02-video/img/g2a-stress.jpg';\nconst video=dir+'/lesson-10000-c.mp4';\ncp.execSync('ffmpeg -y -loop 1 -i \"'+img+'\" -i \"'+$json.audioPath+'\" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -ar 48000 -ac 2 -pix_fmt yuv420p -vf \"scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2\" -shortest \"'+video+'\"');\nconst videoSize=fs.statSync(video).size;\nconst vo=cp.execSync('ffprobe -v error -show_entries format=duration -of csv=p=0 \"'+video+'\"').toString().trim();\nreturn [{json:{...$json, videoPath:video, videoSize, videoSec:parseFloat(vo)}}];"
+      },
+      "id": "074459f8-89e5-4cf8-b4f5-c0de3644662e",
+      "name": "ffmpeg Build Video (替VEED)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs');\nconst key=JSON.parse(fs.readFileSync('C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/deepseek-key.json','utf8')).apiKey;\nasync function ds(prompt, maxTok){\n  const resp = await this.helpers.httpRequest({method:'POST', url:'https://api.deepseek.com/chat/completions',\n    headers:{Authorization:'Bearer '+key, 'Content-Type':'application/json'},\n    body:{model:'deepseek-chat', messages:[{role:'user', content:prompt}], max_tokens:maxTok||400}, json:true});\n  return resp.choices[0].message.content;\n}\nconst prompt='Create an engaging TikTok caption for a video about: '+$json.theme+'\\n\\nBased on these trends: '+$json.trends+'\\n\\nRequirements:\\n- Catchy hook in first line\\n- Include 5-8 relevant trending hashtags\\n- Keep it concise and engaging\\n- Optimize for TikTok algorithm\\n- Return ONLY the caption text with hashtags, nothing else';\nconst caption = await ds(prompt, 300);\nreturn [{json:{...$json, caption}}];"
+      },
+      "id": "463654bf-8dcf-4a27-bf2f-85ba63396560",
+      "name": "DeepSeek Caption (替GPT)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs');\nconst file='C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/10000-c-data/ledger.json';\nlet rows=[]; try{ rows=JSON.parse(fs.readFileSync(file,'utf8')); }catch(e){}\nconst row={'IDEA':$json.theme, 'CAPTION':$json.caption, 'URL AUDIO':$json.audioPath, 'URL IMAGE':'C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/lesson-02-video/img/g2a-stress.jpg', 'URL VIDEO':$json.videoPath, 'STATUS':'DONE', ts:new Date().toISOString()};\nrows.push(row);\nfs.writeFileSync(file, JSON.stringify(rows,null,1), 'utf8');\nreturn [{json:{...$json, ledgerRows:rows.length, ledgerRow:row}}];"
+      },
+      "id": "bae16b21-149d-40da-967a-8ae94129b4fb",
+      "name": "Local Ledger (替Sheets)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const plats=['tiktok','linkedin','facebook','instagram','twitter','youtube','threads','bluesky','pinterest'];\nconst posted=plats.map(p=>({platform:p, posted:true}));\nreturn [{json:{...$json, posted, postedCount:posted.length}}];"
+      },
+      "id": "d2e3248b-99bf-46cf-bac4-7db53a50d835",
+      "name": "Mock Publish (替Blotato 9平台)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs'); const R=[];\nfunction T(n,c){R.push((c?'PASS':'FAIL')+' | '+n);}\nconst dir='C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/10000-c-data';\nT('脚本非空且>20字', $json.script && $json.script.length>20);\nT('趋势非空', $json.trends && $json.trends.length>10);\nT('音频文件存在且>10KB', $json.audioSize>10000);\nT('音频时长>3s', $json.audioSec>3);\nT('成片存在且>200KB', $json.videoSize>200000);\nT('成片时长≈音频时长(±2s)', Math.abs($json.videoSec-$json.audioSec)<2);\nT('成片编码出横屏时长正常', $json.videoSec>3);\nT('文案含hashtag', $json.caption && $json.caption.indexOf('#')>=0);\nT('台账行已写入', $json.ledgerRows>=1 && $json.ledgerRow.STATUS==='DONE');\nT('台账URL VIDEO=成片', $json.ledgerRow['URL VIDEO']===$json.videoPath);\nT('台账持久化文件可读', JSON.parse(fs.readFileSync(dir+'/ledger.json','utf8')).length>=1);\nT('9平台发布(mock)', $json.postedCount===9);\nconst fails=R.filter(x=>x.indexOf('FAIL')===0);\nconsole.log(JSON.stringify({total:R.length, fails}, null, 1));\nfails.forEach(f=>console.log(f));\nif(fails.length) throw new Error('L2C FAIL: '+fails.join(' ; '));\nreturn [{json:{summary:{total:R.length, fail:0}, audioSec:$json.audioSec, videoSec:$json.videoSec, videoSize:$json.videoSize}}];"
+      },
+      "id": "1578e8c3-29d7-449c-a387-1a32b3359b0d",
+      "name": "ASSERT-C",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Mock TG Message In",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock TG Message In": {
+      "main": [
+        [
+          {
+            "node": "Extract Photo and Theme",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Photo and Theme": {
+      "main": [
+        [
+          {
+            "node": "DeepSeek Trends (替Perplexity)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Trends (替Perplexity)": {
+      "main": [
+        [
+          {
+            "node": "DeepSeek Script (替GPT)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Script (替GPT)": {
+      "main": [
+        [
+          {
+            "node": "edge-tts Voice (替ElevenLabs)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "edge-tts Voice (替ElevenLabs)": {
+      "main": [
+        [
+          {
+            "node": "Probe Audio Duration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Audio Duration": {
+      "main": [
+        [
+          {
+            "node": "ffmpeg Build Video (替VEED)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ffmpeg Build Video (替VEED)": {
+      "main": [
+        [
+          {
+            "node": "DeepSeek Caption (替GPT)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Caption (替GPT)": {
+      "main": [
+        [
+          {
+            "node": "Local Ledger (替Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local Ledger (替Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Mock Publish (替Blotato 9平台)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock Publish (替Blotato 9平台)": {
+      "main": [
+        [
+          {
+            "node": "ASSERT-C",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "pinData": {},
+  "tags": []
+}
