@@ -1,0 +1,813 @@
+{
+  "id": "L2Mock10000S1",
+  "name": "L2-B mock 10000 S1",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "94acfee7-cfd3-412e-be4d-6e105935c425",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{message:{photo:[{file_id:'f1_small'},{file_id:'f2_large'}], caption:'fitness tips', chat:{id:555}, message_id:1}}}];"
+      },
+      "id": "538d7965-dca2-4525-8596-04d6ebefb9e2",
+      "name": "Mock TG Message In",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2380,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "elevenLabsApiKey",
+              "type": "string",
+              "value": "MOCK_EL_KEY"
+            },
+            {
+              "id": "id-2",
+              "name": "elevenLabsVoiceId",
+              "type": "string",
+              "value": "MOCK_VOICE"
+            },
+            {
+              "id": "id-3",
+              "name": "falApiKey",
+              "type": "string",
+              "value": "MOCK_FAL_KEY"
+            },
+            {
+              "id": "id-5",
+              "name": "scriptMaxDuration",
+              "type": "number",
+              "value": 30
+            },
+            {
+              "id": "id-6",
+              "name": "perplexityModel",
+              "type": "string",
+              "value": "sonar"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "id": "d7226690-2b58-44d0-a2ba-18638f820ec6",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "photoUrl",
+              "type": "string",
+              "value": "={{ $json.message.photo ? $json.message.photo[$json.message.photo.length - 1].file_id : '' }}"
+            },
+            {
+              "id": "id-2",
+              "name": "theme",
+              "type": "string",
+              "value": "={{ $json.message.caption || $json.message.text || 'viral content' }}"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "id": "d39c8669-178b-4f43-9018-53d3d85f9d9c",
+      "name": "Extract Photo and Theme",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1940,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fid = $json.photoUrl;\nreturn [{json:{...$json, photoFetched: fid!=='', fetchedFileId: fid}, binary: fid!==''?{data:{data:'UEhPVE8=', fileName:'photo.jpg', mimeType:'image/jpeg'}}:{}}];"
+      },
+      "id": "ca78e5b5-c90a-4ec7-aca3-ea36238b9451",
+      "name": "Get Photo File from Telegram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const has = !!(items[0] && items[0].binary && items[0].binary.data);\nreturn [{json:{...$('Extract Photo and Theme').first().json, data:{url: has?'http://tmpfiles.org/123/photo.jpg':''}, imgUploaded: has}}];"
+      },
+      "id": "3df1b82c-2ec0-44d3-9d05-c88f6b11669b",
+      "name": "Build Public Image URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const caption = $('Extract Photo and Theme').first().json.message.caption;\nconst promptDebug = \"Find the top 3 current viral trends related to: \" + caption + \". Focus on trending topics, hashtags, and content styles that are performing well on TikTok right now. Be specific and actionable. Limit your response strictly to 3 results only — no more.\";\nreturn [{json:{...$json, promptDebug, choices:[{message:{content:'TREND1 viral dance; TREND2 gymtok; TREND3 quick recipes'}}]}}];"
+      },
+      "id": "fd415750-ff9c-4926-9e15-2a2410dbad32",
+      "name": "Search Trends with Perplexity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{message:{content:'钩子! 这是30秒口播稿正文。'}, trendsSeen: $('Search Trends with Perplexity').first().json.choices[0].message.content}}];"
+      },
+      "id": "729ee95b-4100-4590-b859-21ef4986f70e",
+      "name": "Generate Script with GPT-4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1060,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let text, e1Missing=false;\ntry { text = $json.message.content; } catch(e) { e1Missing = true; text = undefined; }\nif (text === undefined) e1Missing = true;\nreturn [{json:{...$json, ttsText: text, e1Missing}, binary:{audio:{data:'QVVESU8=', fileName:'voice.mpga', mimeType:'audio/x-mpga'}}}];"
+      },
+      "id": "881a8846-3be1-4829-b182-8919cf009662",
+      "name": "ElevenLabs Voice Synthesis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -840,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const b = item.binary?.audio;\n  if (!b) return item;\n  item.binary.audio_mp3 = {\n    ...b,\n    fileName: (b.fileName || 'audio.mp3').replace(/\\.mpga$/i, '.mp3'),\n    mimeType: 'audio/mpeg'\n  };\n  return item;\n});"
+      },
+      "id": "f6c91847-8555-46b2-881a-2bd3bbe8bf7b",
+      "name": "Convert .mpga to .mp3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json, data:{url:'http://tmpfiles.org/456/voice.mp3'}, audioUploaded: true}}];"
+      },
+      "id": "81025daa-5582-45a2-a28e-3de52a355c46",
+      "name": "Upload Audio to Public URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function rw(u){ return (u||'').replace(/^http:\\/\\/tmpfiles\\.org\\/(\\d+)\\/(.*)$/i, 'https://tmpfiles.org/dl/$1/$2'); }\nconst falBody = { image_url: rw($('Build Public Image URL').first().json.data.url), audio_url: rw($json.data.url), resolution: '480p' };\nreturn [{json:{...$json, falBody, request_id:'req-10000-S1'}}];"
+      },
+      "id": "cbf58361-e3d0-40df-a939-85ee409f3cac",
+      "name": "FAL.ai Video Generation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "unit": "seconds",
+        "amount": 1
+      },
+      "id": "b073b37b-5d3c-4240-821e-7a4f42916406",
+      "name": "Wait for VEED",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{...$json, video:{url:'https://fal.media/v10000.mp4'}}}];"
+      },
+      "id": "69510799-4ae8-4e4d-a465-d5c515cba92f",
+      "name": "Download VEED Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, message:{content:'爆款文案 #健身 #干货 #fyp #tiktok #viral'}}}];"
+      },
+      "id": "bcc5d606-d2de-49e6-9695-58dae881a77b",
+      "name": "Generate Caption with GPT-4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nconst row = { 'IDEA': $('Extract Photo and Theme').first().json.message.caption, 'CAPTION': $json.message.content, 'URL AUDIO': $('Upload Audio to Public URL').first().json.data.url, 'URL IMAGE': $('Build Public Image URL').first().json.data.url, 'URL VIDEO': $('Download VEED Video').item.json.video.url };\nreturn [{json:{...$json, sheetRow: row}}];"
+      },
+      "id": "cdc1a9d4-b393-48eb-9dda-6b1549ece40b",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, sentVideo: true, sentToChat: $('Telegram Trigger').first().json.message ? 555 : 555, sentFile: $json.sheetRow['URL VIDEO']}}];"
+      },
+      "id": "8d088160-6a24-44d1-a123-90885f390df1",
+      "name": "Send a video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, blotatoUrl:'https://blotato.media/mock10000'}}];"
+      },
+      "id": "df7ae1b3-ab13-4e21-9df0-bab900a11f54",
+      "name": "Upload Video to BLOTATO",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'tiktok', posted:true}}];"
+      },
+      "id": "839d66bf-aeef-47d3-a4ff-14da96f7f601",
+      "name": "Tiktok",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -640
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'linkedin', posted:true}}];"
+      },
+      "id": "606873d1-b6bd-45e2-a881-24897457ed8b",
+      "name": "Linkedin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'facebook', posted:true}}];"
+      },
+      "id": "af7c352b-1402-4e76-9655-222a5a3aeddf",
+      "name": "Facebook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'instagram', posted:true}}];"
+      },
+      "id": "b93e04d6-01ee-4c6c-b29c-080be806e730",
+      "name": "Instagram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'twitter', posted:true}}];"
+      },
+      "id": "242d73b8-5e4b-4eef-8a1f-dff74ee89e8b",
+      "name": "Twitter (X)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'youtube', posted:true}}];"
+      },
+      "id": "bcc6ec64-a796-4e91-9f27-1b0beb19bb04",
+      "name": "Youtube",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'threads', posted:true}}];"
+      },
+      "id": "3e3a4183-a631-4b75-8091-09eaeaa4a4da",
+      "name": "Threads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'bluesky', posted:true}}];"
+      },
+      "id": "16510be7-2c79-4be7-ab44-2bf46514126e",
+      "name": "Bluesky",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, platform:'pinterest', posted:true}}];"
+      },
+      "id": "089ae33b-2387-48c7-bd80-963a1d73fbb5",
+      "name": "Pinterest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "numberInputs": 9
+      },
+      "id": "5663118a-04c9-4bb0-a906-1ba37ea2dfd9",
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.chainBroken) return [{json:{...$json}}];\nreturn [{json:{...$json, STATUS:'DONE', finalUrl: $('Save to Google Sheets').item.json.sheetRow['URL VIDEO']}}];"
+      },
+      "id": "80aeecba-bcf7-499f-880f-1dbb82a5a4b8",
+      "name": "Update Status to \"DONE\"",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const R=[];function T(n,c){R.push((c?'PASS':'FAIL')+' | '+n);}\nT(\"theme=caption\", $('Extract Photo and Theme').first().json.theme==='fitness tips');\nT(\"photoUrl取最大\", $('Extract Photo and Theme').first().json.photoUrl==='f2_large');\nT(\"photo已抓取带binary\", $('Get Photo File from Telegram').first().json.photoFetched===true);\nT(\"图片已上传tmpfiles\", $('Build Public Image URL').first().json.data.url==='http://tmpfiles.org/123/photo.jpg');\nT(\"Perplexity prompt含主题\", $('Search Trends with Perplexity').first().json.promptDebug.indexOf('fitness tips')>0);\nT(\"GPT看到趋势\", $('Generate Script with GPT-4').first().json.trendsSeen.indexOf('TREND1')>=0);\nT(\"TTS拿到脚本文本\", $('ElevenLabs Voice Synthesis').first().json.ttsText.indexOf('口播稿')>0);\nT(\"mpga转mp3\", $('Convert .mpga to .mp3').first().binary.audio_mp3.fileName==='voice.mp3');\nT(\"FAL image_url已改写https+dl\", $('FAL.ai Video Generation').first().json.falBody.image_url==='https://tmpfiles.org/dl/123/photo.jpg');\nT(\"FAL audio_url已改写\", $('FAL.ai Video Generation').first().json.falBody.audio_url==='https://tmpfiles.org/dl/456/voice.mp3');\nT(\"FAL 480p硬编码\", $('FAL.ai Video Generation').first().json.falBody.resolution==='480p');\nT(\"台账IDEA\", $('Save to Google Sheets').first().json.sheetRow.IDEA==='fitness tips');\nT(\"台账URL VIDEO\", $('Save to Google Sheets').first().json.sheetRow['URL VIDEO']==='https://fal.media/v10000.mp4');\nT(\"回传视频到TG\", $('Send a video').first().json.sentVideo===true && $('Send a video').first().json.sentFile==='https://fal.media/v10000.mp4');\nT(\"Blotato上传\", $('Upload Video to BLOTATO').first().json.blotatoUrl.indexOf('blotato.media')>0);\nT(\"Tiktok发布\", $('Tiktok').first().json.posted===true);\nT(\"9平台全发布\", ['Tiktok','Linkedin','Facebook','Instagram','Twitter (X)','Youtube','Threads','Bluesky','Pinterest'].every(n=>$(n).first().json.posted===true));\nT(\"状态回写DONE\", $('Update Status to \"DONE\"').first().json.STATUS==='DONE');\nconst fails=R.filter(x=>x.indexOf('FAIL')===0);\nconsole.log('SCENARIO S1 total='+R.length+' fail='+fails.length);\nif(fails.length) throw new Error('FAIL: '+fails.join(' ; '));\nreturn [{json:{scenario:'S1', total:R.length, fails:0}}];"
+      },
+      "id": "9eea7a78-e9e6-412b-b7fa-362d952ca5a3",
+      "name": "ASSERT-S1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2040,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Mock TG Message In",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock TG Message In": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Extract Photo and Theme",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Photo and Theme": {
+      "main": [
+        [
+          {
+            "node": "Get Photo File from Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Photo File from Telegram": {
+      "main": [
+        [
+          {
+            "node": "Build Public Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Public Image URL": {
+      "main": [
+        [
+          {
+            "node": "Search Trends with Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Trends with Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Generate Script with GPT-4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Script with GPT-4": {
+      "main": [
+        [
+          {
+            "node": "ElevenLabs Voice Synthesis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs Voice Synthesis": {
+      "main": [
+        [
+          {
+            "node": "Convert .mpga to .mp3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert .mpga to .mp3": {
+      "main": [
+        [
+          {
+            "node": "Upload Audio to Public URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Audio to Public URL": {
+      "main": [
+        [
+          {
+            "node": "FAL.ai Video Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAL.ai Video Generation": {
+      "main": [
+        [
+          {
+            "node": "Wait for VEED",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for VEED": {
+      "main": [
+        [
+          {
+            "node": "Download VEED Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download VEED Video": {
+      "main": [
+        [
+          {
+            "node": "Generate Caption with GPT-4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Caption with GPT-4": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a video": {
+      "main": [
+        [
+          {
+            "node": "Upload Video to BLOTATO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video to BLOTATO": {
+      "main": [
+        [
+          {
+            "node": "Tiktok",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Linkedin",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Facebook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Instagram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Twitter (X)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Youtube",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Threads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Bluesky",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pinterest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tiktok": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Linkedin": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Facebook": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Instagram": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Twitter (X)": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Youtube": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Threads": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "Bluesky": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 7
+          }
+        ]
+      ]
+    },
+    "Pinterest": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 8
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Update Status to \"DONE\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status to \"DONE\"": {
+      "main": [
+        [
+          {
+            "node": "ASSERT-S1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "pinData": {},
+  "tags": []
+}
